@@ -1,5 +1,23 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const pie = require('puppeteer-in-electron');
+const puppeteer = require('puppeteer-core');
+
+const init = async () => {
+  await pie.initialize(app);
+};
+init();
+
+const h1 = async () => {
+  const browser = await pie.connect(app, puppeteer);
+  const window = new BrowserWindow({ show: false });
+  const url = "https://example.com/";
+  await window.loadURL(url);
+  const page = await pie.getPage(browser, window);
+  const h1 = await page.$eval("h1", (el) => el.innerText);
+  window.destroy();
+  return h1;
+};
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -51,3 +69,6 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+app.whenReady().then(() => {
+  ipcMain.handle("example.com:h1", h1);
+});
